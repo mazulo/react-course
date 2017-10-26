@@ -1,15 +1,50 @@
-import React from 'react';
+import _ from 'lodash';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
+import YTSearch from 'youtube-api-search';
 
-import App from './components/app';
-import reducers from './reducers';
+import SearchBar from './components/search_bar';
+import VideoList from './components/video_list';
+import VideoDetail from './components/video_detail';
 
-const createStoreWithMiddleware = applyMiddleware()(createStore);
+const YOUTUBE_API_KEY = 'AIzaSyCgzq7KJrXNEQWPLaoco11ELfp1RvY1Rfc';
 
-ReactDOM.render(
-  <Provider store={createStoreWithMiddleware(reducers)}>
-    <App />
-  </Provider>
-  , document.querySelector('.container'));
+
+/// Create a new component. This component should produce some HTML
+class App extends Component {
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			videos: [],
+			selected_video: null,
+		};
+		this.videoSearch('django rest framework');
+	}
+	videoSearch(term) {
+		YTSearch({key: YOUTUBE_API_KEY, term: term}, videos => {
+			this.setState({
+				videos: videos,
+				selected_video: videos[0],
+			});
+		});
+	}
+
+	render () {
+		const videoSearch = _.debounce((term) => { this.videoSearch(term)}, 300);
+		return (
+			<div>
+				<SearchBar onSearchTermChange={videoSearch} />
+				<VideoDetail video={this.state.selected_video} />
+				<VideoList
+					onVideoSelect={selected_video => this.setState({selected_video})}
+					videos={this.state.videos}
+				/>
+			</div>
+		);
+	}
+}
+
+// Take this component's generated HTML and put it on the page (in the DOM)
+ReactDOM.render(<App />, document.querySelector('.container'));
